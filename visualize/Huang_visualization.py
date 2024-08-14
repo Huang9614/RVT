@@ -26,17 +26,17 @@ def main(config: DictConfig):
     # adapted model with visualization ability
     ckpt_path = Path(config.checkpoint)
     model = Predictor(config)  
-    model = model.load_from_checkpoint(str(ckpt_path), **{'full_config': config})
+    model = model.load_from_checkpoint(str(ckpt_path), **{'full_config': config}) # method of pl.LightningModule
 
 
     # data
     data_module = fetch_data_module(config=config)
     
-    data_module.setup('test')
-    test_dataloader = data_module.test_dataloader()
+    data_module.setup('test') # method of pl.LightningDataModule
+    test_dataloader = data_module.test_dataloader() # method of pl.LightningDataModule
 
     list_merged_img = []
-    with torch.inference_mode():# in case of gradient calculation which occupies a lot of memories
+    with torch.inference_mode(): # in case of gradient calculation which occupies a lot of memories
 
         for batch_idx, batch in enumerate(test_dataloader):
             print('****** Take single batch from test_dataloader *******')
