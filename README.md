@@ -1,16 +1,4 @@
-# utils
-```bash
-tks-huston.fzi.de:3000 # check the option All
-
-nvidia-smi # check what kind of programs are running on the current gpu
-
-ssh ids-imperator # connect to other workstation, name from All
-```
-
-## [tmux tutorial](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux)
-
-
-# Implementations
+# Core Implementations
 
 ## class PartitionAttentionCl(nn.Module)
 - LayerNorm + Block-SA/Grid-SA + LayerScale + PathDrop + LayerNorm + MLP + LayerScale + PathDrop btw. residul connection in RVT Block
@@ -39,11 +27,43 @@ ssh ids-imperator # connect to other workstation, name from All
   - finally used in `train.py` and `validation.py` files
 
 
-# Event Stream 
-
-
-
-
-
-
 # Extention: Visulization
+
+## idea
+1. instantiate the model, called Predictor, load parameters from checkpoint
+2. instantiate test_dataloader
+3. feed each batch from the test_dataloader into the model to get the predicted results, which consist of LABELS_PROPH, PRED_PROPH, EV_ERPR and SKIP_VIZ
+4. feed the results into draw_bbox_on_ev_img, to get the image with bbox and predicted labels
+5. using cv2 to show the merged
+
+
+
+
+# Method of dealing with Event Stream 
+
+
+
+
+
+# Notes
+
+## configure files
+
+
+# others
+```bash
+tks-huston.fzi.de:3000 # check the option All
+
+nvidia-smi # check what kind of programs are running on the current gpu
+
+ssh ids-imperator # connect to other workstation, name from All
+```
+
+
+## [tmux tutorial](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux)
+
+
+
+
+
+
