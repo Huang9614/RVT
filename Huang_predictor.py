@@ -64,7 +64,7 @@ class Predictor(pl.LightningModule):
             - batch: 
         '''
 
-        start_time = time.time()    # just for measuring the inference time
+        # start_time = time.time()    # just for measuring the inference time
 
         batch = merge_mixed_batches(batch)
         data = batch['data']
@@ -90,7 +90,10 @@ class Predictor(pl.LightningModule):
         backbone_feature_selector = BackboneFeatureSelector()
         ev_repr_selector = EventReprSelector()
 
+        start = time.time()
+        print(f" start the for loop for event_seq\n")
         obj_labels = list()
+        
         for tidx in range(sequence_len):
             ev_tensors = ev_tensor_sequence[tidx]
             ev_tensors = ev_tensors.to(dtype=self.dtype)
@@ -116,6 +119,9 @@ class Predictor(pl.LightningModule):
                 ev_repr_selector.add_event_representations(event_representations=ev_tensors,
                                                            selected_indices=valid_batch_indices)
 
+        end = time.time()
+        duration = end - start
+        print(f"end for loop.\n The for loop takes {duration} secs.\n")
 
         self.mode_2_rnn_states[mode].save_states_and_detach(worker_id=worker_id, states=prev_states)
         
@@ -149,11 +155,11 @@ class Predictor(pl.LightningModule):
             }
 
     
-        end_time = time.time()
+        # end_time = time.time()
 
-        duration = end_time - start_time
+        # duration = end_time - start_time
 
-        print(f' --- It takes {duration} seconds for the inference ---')
+        # print(f' --- It takes {duration} seconds for the inference ---')
         return output
 
 
