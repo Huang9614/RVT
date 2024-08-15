@@ -111,7 +111,7 @@ class Predictor(pl.LightningModule):
             prev_states = states
 
 
-            current_labels, valid_batch_indices = sparse_obj_labels[tidx].get_valid_labels_and_batch_indices()
+            current_labels, valid_batch_indices = sparse_obj_labels[tidx].get_valid_labels_and_batch_indices() # method of class SparselyBatchedObjectLabels from labels.py
             if len(current_labels) > 0:
                 backbone_feature_selector.add_backbone_features(backbone_features=backbone_features,
                                                                 selected_indices=valid_batch_indices)
