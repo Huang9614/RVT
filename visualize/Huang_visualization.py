@@ -30,7 +30,7 @@ def main(config: DictConfig):
 
 
     # data
-    data_module = fetch_data_module(config=config)
+    data_module = fetch_data_module(config=config) # -> pl.LightningDataModule
     
     data_module.setup('test') # method of pl.LightningDataModule
     test_dataloader = data_module.test_dataloader() # method of pl.LightningDataModule
@@ -43,7 +43,7 @@ def main(config: DictConfig):
             outputs = model(batch=batch , batch_idx=batch_idx)
             list_merged_img = model.draw_bbox_on_ev_img(batch=batch, outputs=outputs)
 
-            # print('## list of merged images available, starting to visuliaztion ##')
+            # TODO: why only 2 images? Change the batch_size.eval in visualize.sh
             for idx, img in enumerate(list_merged_img):
                 
                 img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)

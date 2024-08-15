@@ -157,5 +157,5 @@ def merge_mixed_batches(batch: Dict[str, Any]):
     data_out = dict()
     for key in rnd_data.keys():
         data_out[key] = mixed_collate_fn(stream_data[key], rnd_data[key])
-    out.update({'data': data_out})
+    out.update({'data': data_out}) # method of built-in datatype: Dictionary
     return out

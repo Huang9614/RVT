@@ -26,12 +26,16 @@ import time
 
 class Predictor(pl.LightningModule):
     '''
-    fuse YOLOX-class Predictor with RVT-class Module, so as to build up model + inference + visualization
+        From the functional perspective, this class works similar with class Module: 1. inherent from pl.LightningModule; 2. consume data and output predictions;
 
-    - def prediction
-    - def ev_repr_to_img
-    - def ev_img_with_bbox
+        Even though this class inherents from pl.LightningModule, 
+        I didn't use any other "hookers" of it, listed here [https://lightning.ai/docs/pytorch/stable/common/lightning_module.html]
+        
+        - def forward           :   generate the predictions in the form of TODO
+        - def ev_repr_to_img    :   convert event stream to images
+        - def ev_img_with_bbox  :   generate the event_frame with predicted bboxes und corresponding labels
     '''
+
     def __init__(self, full_config:DictConfig):
         super().__init__()
 
@@ -53,30 +57,34 @@ class Predictor(pl.LightningModule):
 
     def forward(self, batch: Any, batch_idx:int):
         '''
-        mimic class Module- method training-step for processing data stream;
+            Follow the idea from training_step in the class Module(pl.LightningModule) in detection.py;
 
-        read dataset from dataloader and return structured output through YoloxDetector
+            read dataset from dataloader and return structured output through YoloxDetector;
+
+            - batch: 
         '''
-        start_time = time.time()
+
+        start_time = time.time()    # just for measuring the inference time
 
         batch = merge_mixed_batches(batch)
         data = batch['data']
         worker_id = batch['worker_id']
-        # therefore, batch == el in validation.py
 
 
         mode = Mode.TEST
         ev_tensor_sequence = data[DataType.EV_REPR]
         sparse_obj_labels = data[DataType.OBJLABELS_SEQ]
         is_first_sample = data[DataType.IS_FIRST_SAMPLE]
-        token_mask_sequence = data.get(DataType.TOKEN_MASK, None)
+        token_mask_sequence = data.get(DataType.TOKEN_MASK, None) # method of built-in datatype: Dictionary, return the corresoponding value 
 
 
-        self.mode_2_rnn_states[mode].reset(worker_id=worker_id, indices_or_bool_tensor=is_first_sample)
+        self.mode_2_rnn_states[mode].reset(worker_id=worker_id, indices_or_bool_tensor=is_first_sample) # method of instance of class RNNStates
 
 
         sequence_len = len(ev_tensor_sequence)
+        print(f"-- the ev_tensor_sequence is {sequence_len}, output from Huang_predictor.py line 85. --\n")
         batch_size = len(sparse_obj_labels[0])
+        print(f"-- And the batch_size is {batch_size}. --\n")
 
         prev_states = self.mode_2_rnn_states[mode].get_states(worker_id=worker_id)
         backbone_feature_selector = BackboneFeatureSelector()
@@ -92,7 +100,6 @@ class Predictor(pl.LightningModule):
             else:
                 token_masks = None
 
-            # print('###### forward_backbone #########')
             backbone_features, states = self.mdl.forward_backbone(x=ev_tensors,
                                                                   previous_states=prev_states,
                                                                   token_mask=token_masks)
@@ -117,7 +124,6 @@ class Predictor(pl.LightningModule):
         labels_yolox = ObjectLabels.get_labels_as_batched_tensor(obj_label_list=obj_labels, format_='yolox')
         labels_yolox = labels_yolox.to(dtype=self.dtype)
 
-        #print('### forward_detect ###')
         predictions, losses = self.mdl.forward_detect(backbone_features=selected_backbone_features,
                                                       targets=labels_yolox)
 
@@ -133,7 +139,6 @@ class Predictor(pl.LightningModule):
         predictions = predictions[-batch_size:]
         obj_labels = obj_labels[-batch_size:]
 
-        #print('### creating output ###')
         
         output = {
                 ObjDetOutput.LABELS_PROPH: loaded_labels_proph[-batch_size:],
@@ -143,8 +148,7 @@ class Predictor(pl.LightningModule):
                 'loss': losses['loss']
             }
 
-        #print('### creation finished ###')
-
+    
         end_time = time.time()
 
         duration = end_time - start_time
@@ -155,9 +159,9 @@ class Predictor(pl.LightningModule):
 
     def ev_repr_to_img(self, x: np.ndarray):
         '''
-        directly copy from class VizCallbackBase;
+            directly copy from class VizCallbackBase;
 
-        img: [h,w,3] RGB image
+            - img: [h,w,3] RGB image
         '''
         
         ch, ht, wd = x.shape[-3:]
@@ -175,10 +179,13 @@ class Predictor(pl.LightningModule):
 
     def draw_bbox_on_ev_img(self, batch: Any, outputs: Any):
         '''
-        mimic class DetectionVizCallback- def on_train_batch_end_custom;
+            follow the idea of function on_train_batch_end_custom in class DetectionVizCallback
 
-        generate event images with predicted boungding boxes
+            generate event images with predicted boungding boxes
         '''
+        print(" -- start to drawing bbox -- \n")
+        start_time  = time.time()
+
         ev_tensors = outputs[ObjDetOutput.EV_REPR]
         num_samples = len(ev_tensors)
 
@@ -195,4 +202,9 @@ class Predictor(pl.LightningModule):
             draw_bboxes(label_img, labels_proph, labelmap=LABELMAP_GEN1)
 
             merged_img.append(rearrange([prediction_img, label_img], 'pl H W C -> (pl H) W C', pl=2, C=3)) # pl = prediction_img + label_img
+        
+        end_time = time.time()
+        duration = end_time - start_time
+
+        print(f" -- Drawing Bbox done, takes {duration} seconds. \n")
         return merged_img
